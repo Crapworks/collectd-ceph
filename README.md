@@ -35,6 +35,10 @@ Add the following to your collectd config:
     </Plugin>
 ```
 
+```
+TypesDB "/usr/share/collectd/types.db" "/usr/lib/collectd/python/ceph.types.db"
+```
+
 The plugin will find all admin sockets matching the shell expression and query them. The results will be tagged with the name of the corresponding daemon (ex.: ```osd.12```) in the plugin_instance field.
 
 Contribution
