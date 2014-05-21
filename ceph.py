@@ -42,14 +42,14 @@ def query_admin_socket(admin_socket, cmd):
         sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
         sock.connect(admin_socket)
     except socket.error, e:
-        collectd.error('ceph plugin: Error connecting to %s: - %r' % (admin_socket, e))
+        collectd.error('ERROR: ceph plugin: Connecting to %s: - %r' % (admin_socket, e))
         return None
     sock.sendall(cmd)
     try:
         length = struct.unpack('>i', sock.recv(4))[0]
         json_data = json.loads(sock.recv(length))
     except Exception as err:
-        collectd.error('ceph plugin: unable to parse json: %r' % (err, ))
+        collectd.error('ERROR: ceph plugin: Unable to parse json: %r' % (err, ))
         json_data = {}
     finally:
         sock.close()
@@ -64,7 +64,7 @@ def configure_callback(conf):
         if node.key == 'AdminSocket':
              CEPH_ADMIN_SOCKET= node.values[0]
         else:
-            collectd.warning('ceph plugin: Unknown config key: %s.' % (node.key, ))
+            collectd.warning('WARNING: ceph plugin: Unknown config key: %s.' % (node.key, ))
 
 
 def dispatch_value(collectd_type, plugin_instance, values):
@@ -88,16 +88,20 @@ def dispatch_value(collectd_type, plugin_instance, values):
 def read_callback():
     for admin_socket in glob.glob(CEPH_ADMIN_SOCKET):
         perfdata = query_admin_socket(admin_socket, '{\"prefix\": \"perf dump\"}\0')
-        plugin_instance = query_admin_socket(admin_socket, '{\"prefix\": \"config show\"}\0')['name']
-
         if not perfdata:
-            collectd.error('ceph plugin: No data received')
+            collectd.error('ERROR: ceph plugin: No perf data received from %s' % admin_socket)
             return
+
+        #FIXME: extract instance name directly from admin_socket name: /var/run/ceph/ceph-osd.25.asok -> osd.25
+        configdata = query_admin_socket(admin_socket, '{\"prefix\": \"config show\"}\0')
+        if not configdata:
+            collectd.error('ERROR: ceph plugin: No config data received from %s' % admin_socket)
+            return
+        plugin_instance = configdata['name']
 
         for collectd_type, value in perfdata.iteritems():
             if not value:
                 continue
-
             dispatch_value(collectd_type, plugin_instance, value.values())
 
 
