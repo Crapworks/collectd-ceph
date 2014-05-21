@@ -36,11 +36,12 @@ import re
 
 CEPH_ADMIN_SOCKET=''
 
-# asok format: /var/run/ceph/{cluser}-{id}.asok
+# ceph asok format: /var/run/ceph/{cluser}-{id}.asok
 ADMIN_SOCKET_REGEXP = '.*/(.+)\-(.+)\.asok$'
 ADMIN_SOCKET_PATTERN = re.compile(ADMIN_SOCKET_REGEXP)
 
 def get_cluster_name(admin_socket):
+    """returns the cluster name part from admin socket"""
     m = ADMIN_SOCKET_PATTERN.match(admin_socket)
     name = None
     if m:
@@ -48,6 +49,7 @@ def get_cluster_name(admin_socket):
     return name
     
 def get_id_name(admin_socket):
+    """returns the component (osd, mon, rgw) name part from admin socket"""
     m = ADMIN_SOCKET_PATTERN.match(admin_socket)
     name = None
     if m:
@@ -114,6 +116,10 @@ def read_callback():
 
         # extract instance name directly from admin_socket name: /var/run/ceph/ceph-osd.25.asok -> osd.25
         plugin_instance = get_id_name(admin_socket)
+        if not plugin_instance:
+            collectd.error('ERROR: ceph plugin: No name found in asok: %s' % admin_socket)
+            return
+
         for collectd_type, value in perfdata.iteritems():
             if not value:
                 continue
