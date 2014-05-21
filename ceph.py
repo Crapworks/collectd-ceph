@@ -32,8 +32,28 @@ import socket
 import struct
 import json
 import glob
+import re
 
 CEPH_ADMIN_SOCKET=''
+
+# asok format: /var/run/ceph/{cluser}-{id}.asok
+ADMIN_SOCKET_REGEXP = '.*/(.+)\-(.+)\.asok$'
+ADMIN_SOCKET_PATTERN = re.compile(ADMIN_SOCKET_REGEXP)
+
+def get_cluster_name(admin_socket):
+    m = ADMIN_SOCKET_PATTERN.match(admin_socket)
+    name = None
+    if m:
+        name = m.group(1)
+    return name
+    
+def get_id_name(admin_socket):
+    m = ADMIN_SOCKET_PATTERN.match(admin_socket)
+    name = None
+    if m:
+        name = m.group(2)
+    return name
+
 
 def query_admin_socket(admin_socket, cmd):
     """ Talk to ceph's admin socket """
@@ -62,7 +82,7 @@ def configure_callback(conf):
     global CEPH_ADMIN_SOCKET
     for node in conf.children:
         if node.key == 'AdminSocket':
-             CEPH_ADMIN_SOCKET= node.values[0]
+            CEPH_ADMIN_SOCKET= node.values[0]
         else:
             collectd.warning('WARNING: ceph plugin: Unknown config key: %s.' % (node.key, ))
 
@@ -92,13 +112,8 @@ def read_callback():
             collectd.error('ERROR: ceph plugin: No perf data received from %s' % admin_socket)
             return
 
-        #FIXME: extract instance name directly from admin_socket name: /var/run/ceph/ceph-osd.25.asok -> osd.25
-        configdata = query_admin_socket(admin_socket, '{\"prefix\": \"config show\"}\0')
-        if not configdata:
-            collectd.error('ERROR: ceph plugin: No config data received from %s' % admin_socket)
-            return
-        plugin_instance = configdata['name']
-
+        # extract instance name directly from admin_socket name: /var/run/ceph/ceph-osd.25.asok -> osd.25
+        plugin_instance = get_id_name(admin_socket)
         for collectd_type, value in perfdata.iteritems():
             if not value:
                 continue
