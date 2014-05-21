@@ -48,7 +48,7 @@ def get_cluster_name(admin_socket):
         name = m.group(1)
     return name
     
-def get_id_name(admin_socket):
+def get_instance_name(admin_socket):
     """returns the component (osd, mon, rgw) name part from admin socket"""
     m = ADMIN_SOCKET_PATTERN.match(admin_socket)
     name = None
@@ -115,7 +115,7 @@ def read_callback():
             return
 
         # extract instance name directly from admin_socket name: /var/run/ceph/ceph-osd.25.asok -> osd.25
-        plugin_instance = get_id_name(admin_socket)
+        plugin_instance = get_instance_name(admin_socket)
         if not plugin_instance:
             collectd.error('ERROR: ceph plugin: No name found in asok: %s' % admin_socket)
             return
