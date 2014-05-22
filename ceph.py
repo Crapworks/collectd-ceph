@@ -40,16 +40,20 @@ CEPH_ADMIN_SOCKET=''
 ADMIN_SOCKET_REGEXP = '.*/(.+)\-(.+)\.asok$'
 ADMIN_SOCKET_PATTERN = re.compile(ADMIN_SOCKET_REGEXP)
 
+
 def get_cluster_name(admin_socket):
     """returns the cluster name part from admin socket"""
+
     m = ADMIN_SOCKET_PATTERN.match(admin_socket)
     name = None
     if m:
         name = m.group(1)
     return name
-    
+
+
 def get_instance_name(admin_socket):
     """returns the component (osd, mon, rgw) name part from admin socket"""
+
     m = ADMIN_SOCKET_PATTERN.match(admin_socket)
     name = None
     if m:
@@ -66,7 +70,9 @@ def query_admin_socket(admin_socket, cmd):
     except socket.error, e:
         collectd.error('ERROR: ceph plugin: Connecting to %s: - %r' % (admin_socket, e))
         return None
+
     sock.sendall(cmd)
+
     try:
         length = struct.unpack('>i', sock.recv(4))[0]
         json_data = json.loads(sock.recv(length))
@@ -109,8 +115,7 @@ def dispatch_value(collectd_type, plugin_instance, values):
 
 def read_callback():
 
-    admin_sockets = glob.glob(CEPH_ADMIN_SOCKET)
-    for admin_socket in admin_sockets:
+    for admin_socket in glob.glob(CEPH_ADMIN_SOCKET):
 
         # extract instance name directly from admin_socket: /var/run/ceph/ceph-osd.25.asok -> osd.25
         plugin_instance = get_instance_name(admin_socket)
