@@ -108,16 +108,20 @@ def dispatch_value(collectd_type, plugin_instance, values):
 
 
 def read_callback():
-    for admin_socket in glob.glob(CEPH_ADMIN_SOCKET):
-        perfdata = query_admin_socket(admin_socket, '{\"prefix\": \"perf dump\"}\0')
-        if not perfdata:
-            collectd.error('ERROR: ceph plugin: No perf data received from %s' % admin_socket)
-            return
 
-        # extract instance name directly from admin_socket name: /var/run/ceph/ceph-osd.25.asok -> osd.25
+    admin_sockets = glob.glob(CEPH_ADMIN_SOCKET)
+    for admin_socket in admin_sockets:
+
+        # extract instance name directly from admin_socket: /var/run/ceph/ceph-osd.25.asok -> osd.25
         plugin_instance = get_instance_name(admin_socket)
         if not plugin_instance:
             collectd.error('ERROR: ceph plugin: No name found in asok: %s' % admin_socket)
+            return
+
+        # query 'perf dump'
+        perfdata = query_admin_socket(admin_socket, '{\"prefix\": \"perf dump\"}\0')
+        if not perfdata:
+            collectd.error('ERROR: ceph plugin: No perf data received from %s' % admin_socket)
             return
 
         for collectd_type, value in perfdata.iteritems():
