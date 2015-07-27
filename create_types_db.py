@@ -46,8 +46,9 @@ class CollectdTypesDB(object):
             if not collectd_types:
                 continue
 
-            dataset = ', '.join([ '%s:%s:U:U' % (name, self.ceph2collectd(type_num['type'])) for name, type_num in collectd_types.iteritems() ])
-            tmp += '%s %s\n' % (plugin_instance, dataset)
+            for name, type_num in collectd_types.iteritems():
+                data = 'value:%s:U:U' % (self.ceph2collectd(type_num['type']))
+                tmp += '%s_%s %s\n' % (name, plugin_instance, data)
 
         return tmp
 
